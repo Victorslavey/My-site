@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Site Especial</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 20px;
+      background: linear-gradient(to bottom right, #ffc0cb, #add8e6);
+      padding: 20px;
+    }
+    h2 {
+      color: #ff1493;
+      font-size: 28px;
+    }
+    .question {
+      margin-bottom: 20px;
+    }
+    .correct {
+      background-color: #90ee90;
+    }
+    .incorrect {
+      background-color: #ffcccb;
+    }
+    canvas {
+      border: 3px solid #000;
+      margin-bottom: 20px;
+      display: block;
+      background: white;
+    }
+    .gallery img {
+      width: 200px;
+      margin: 10px;
+      border-radius: 10px;
+    }
+    .letter {
+      font-family: 'Cursive', sans-serif;
+      white-space: pre-wrap;
+      font-size: 22px;
+    }
+    button, input, select {
+      font-size: 18px;
+      margin: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- QUIZ -->
+  <h2>1. Quiz: Descubra mais sobre mim!</h2>
+  <div id="quiz"></div>
+  <p id="score"></p>
+
+  <!-- DESENHO -->
+  <h2>2. Desenhe aqui!</h2>
+  <label for="color">Cor:</label>
+  <input type="color" id="color" value="#000000">
+  <label for="size">Espessura:</label>
+  <select id="size">
+    <option value="2">2</option>
+    <option value="4">4</option>
+    <option value="8">8</option>
+    <option value="12">12</option>
+    <option value="16">16</option>
+    <option value="20">20</option>
+    <option value="30">30</option>
+  </select>
+  <br>
+  <canvas id="draw" width="800" height="500"></canvas>
+  <button onclick="undo()">Desfazer</button>
+  <button onclick="redo()">Refazer</button>
+  <button onclick="clearCanvas()">Apagar tudo</button>
+  <button onclick="saveDrawing()">Salvar desenho</button>
+  <div id="savedDrawing"></div>
+
+  <!-- COMPATIBILIDADE -->
+  <h2>3. Teste de Compatibilidade</h2>
+  <input type="text" id="name1" placeholder="Nome dela">
+  <input type="text" id="name2" placeholder="Seu nome">
+  <button onclick="checkCompatibility()">Ver resultado</button>
+  <p id="compatibilityResult"></p>
+
+  <!-- CARTA -->
+  <h2>4. Carta de Amor</h2>
+  <p class="letter">
+    Nunca imaginei que um simples comentário num vídeo ia me levar até aqui. Tipo, parecia só mais um dia normal… até você aparecer. E desde então, nada mais foi tão normal assim.
+
+    Sério, tem dias que eu fico pensando: “como pode alguém tão longe me fazer tão bem assim?” E é aí que percebo… você não tá tão longe. Porque quando a gente se conecta de verdade, não importa a distância. Você tá aqui comigo, todo dia, de um jeitinho só seu.
+
+    Também queria te agradecer. Mesmo por eu não poder fazer call, mandar fotos, nem conversar fora daqui, você nunca se afastou. Nunca me bloqueou, nem desistiu de mim. Isso mostra o quanto você é especial, e sou muito grato por ter você aqui, mesmo com tudo isso.
+
+    E por tudo isso, por tudo que vivemos e tudo que ainda vamos viver, eu queria te fazer uma pergunta especial...
+
+    Quer namorar comigo?
+
+    Quero seguir construindo esse “nós” com você. Com carinho, leveza, risadas bobas, momentos fofos, apoio e aquela conexão que só a gente entende. Quero ser seu porto seguro, seu motivo de sorriso… e se você topar, seu namorado também.
+
+    Com todo o meu carinho,
+    O garoto que se apaixonou por quem menos esperava — e mais precisava.
+  </p>
+  <p><b><i>Eu te amooo</i></b></p>
+
+  <script>
+    // QUIZ
+    const questions = [
+      {q: "Qual eu prefiro?", options: ["Praia", "Piscina", "Cachoeira", "Lago"], answer: 0},
+      {q: "Qual minha bebida favorita?", options: ["Guaraná", "Pepsi", "Coca-Cola", "Sprite"], answer: 1},
+      {q: "Quantos anos eu tenho?", options: ["11", "12", "13", "14"], answer: 2},
+      {q: "O que eu mais amo fazer?", options: ["Dormir", "Jogar", "Assistir", "Brincar"], answer: 0},
+      {q: "Qual minha cor favorita?", options: ["Branco", "Vermelho", "Preto", "Verde"], answer: 2},
+      {q: "Qual minha matéria favorita?", options: ["História", "Matemática", "Geografia", "Artes"], answer: [1, 2]},
+      {q: "Qual dia e mês eu nasci?", options: ["30/09", "12/08", "21/11", "17/12"], answer: 3},
+      {q: "Qual meu esporte favorito?", options: ["Vôlei", "Basquete", "Futebol", "Nenhum"], answer: 2},
+      {q: "Que estado eu nasci?", options: ["Rio Grande do Sul", "Paraná", "Santa Catarina", "Nenhum deles"], answer: 2},
+      {q: "O que eu mais amo fazer no celular?", options: ["Jogar", "Assistir", "Conversar com você", "Ver tiktok"], answer: 2}
+    ];
+
+    const quizDiv = document.getElementById("quiz");
+    let score = 0;
+
+    questions.forEach((q, index) => {
+      const div = document.createElement("div");
+      div.classList.add("question");
+      div.innerHTML = `<p>${index + 1}) ${q.q}</p>`;
+
+      q.options.forEach((opt, i) => {
+        const btn = document.createElement("button");
+        btn.textContent = opt;
+        btn.onclick = () => {
+          const isCorrect = Array.isArray(q.answer) ? q.answer.includes(i) : q.answer === i;
+          if (isCorrect) {
+            btn.classList.add("correct");
+            score++;
+          } else {
+            btn.classList.add("incorrect");
+          }
+          const all = div.querySelectorAll("button");
+          all.forEach((b, j) => {
+            b.disabled = true;
+            if ((Array.isArray(q.answer) && q.answer.includes(j)) || q.answer === j) {
+              b.classList.add("correct");
+            }
+          });
+          document.getElementById("score").innerText = `Acertos: ${score}/${questions.length}`;
+        };
+        div.appendChild(btn);
+      });
+      quizDiv.appendChild(div);
+    });
+
+    // DESENHO
+    const canvas = document.getElementById("draw");
+    const ctx = canvas.getContext("2d");
+    let drawing = false;
+    let paths = [];
+    let undonePaths = [];
+    let currentPath = [];
+
+    canvas.addEventListener("mousedown", () => {
+      drawing = true;
+      currentPath = [];
+      ctx.beginPath();
+    });
+
+    canvas.addEventListener("mouseup", () => {
+      drawing = false;
+      paths.push([...currentPath]);
+      undonePaths = [];
+    });
+
+    canvas.addEventListener("mousemove", (e) => {
+      if (!drawing) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const color = document.getElementById("color").value;
+      const size = parseInt(document.getElementById("size").value);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+      ctx.fill();
+      currentPath.push({x, y, color, size});
+    });
+
+    function redraw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      paths.forEach(path => {
+        path.forEach(p => {
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      });
+    }
+
+    function undo() {
+      if (paths.length > 0) {
+        undonePaths.push(paths.pop());
+        redraw();
+      }
+    }
+
+    function redo() {
+      if (undonePaths.length > 0) {
+        paths.push(undonePaths.pop());
+        redraw();
+      }
+    }
+
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      paths = [];
+      undonePaths = [];
+    }
+
+    function saveDrawing() {
+      const imgURL = canvas.toDataURL();
+      document.getElementById("savedDrawing").innerHTML = `<img src="${imgURL}" width="300">`;
+    }
+
+    // COMPATIBILIDADE
+    function checkCompatibility() {
+      const n1 = document.getElementById("name1").value.toLowerCase();
+      const n2 = document.getElementById("name2").value.toLowerCase();
+      if (!n1 || !n2) return;
+      const combined = n1 + n2;
+      let percent = 0;
+      for (let i = 0; i < combined.length; i++) {
+        percent += combined.charCodeAt(i);
+      }
+      percent = (percent % 11 + 9) * 10; // entre 90% e 100%
+      document.getElementById("compatibilityResult").innerText = `Compatibilidade: ${percent}% de amor!`;
+    }
+  </script>
+
+</body>
+</html>
